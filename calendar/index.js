@@ -2,17 +2,17 @@ import React, {Component} from 'react';
 import {
   View,
   ViewPropTypes,
-  Text
 } from 'react-native';
 import PropTypes from 'prop-types';
 
 import XDate from 'xdate';
 import dateutils from '../dateutils';
+import numberWithZero from '../../../libs/numberWithZero';
 import {xdateToData, parseDate} from '../interface';
 import styleConstructor from './style';
 import Day from './day/basic';
-import UnitDay from './day/period';
-import MultiDotDay from './day/multi-dot';
+// import UnitDay from './day/interactive';
+// import MultiDotDay from './day/multi-dot';
 import CalendarHeader from './header';
 import shouldComponentUpdate from './updater';
 
@@ -20,6 +20,15 @@ import shouldComponentUpdate from './updater';
 const viewPropTypes = ViewPropTypes || View.propTypes;
 
 const EmptyArray = [];
+
+XDate.locales['id'] = {
+  monthNames: ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],
+  monthNamesShort: ['Jan.','Feb.','Mar','Apr','Mei','Jun','Jul.','Agu','Sep.','Okt.','Nov.','Dec.'],
+  dayNames: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+  dayNamesShort: ['MIN','SEN','SEL','RAB','KAM','JUM','SAB']
+};
+
+XDate.defaultLocale = 'id';
 
 class Calendar extends Component {
   static propTypes = {
@@ -40,7 +49,7 @@ class Calendar extends Component {
     // If firstDay=1 week starts from Monday. Note that dayNames and dayNamesShort should still start from Sunday.
     firstDay: PropTypes.number,
 
-    // Date marking style [simple/period]. Default = 'simple'
+    // Date marking style [simple/interactive]. Default = 'simple'
     markingType: PropTypes.string,
 
     // Hide month navigation arrows. Default = false
@@ -57,8 +66,6 @@ class Calendar extends Component {
     onVisibleMonthsChange: PropTypes.func,
     // Replace default arrows with custom ones (direction can be 'left' or 'right')
     renderArrow: PropTypes.func,
-    // Provide custom day rendering component
-    dayComponent: PropTypes.any,
     // Month format in calendar title. Formatting values: http://arshaw.com/xdate/#Formatting
     monthFormat: PropTypes.string,
     // Disables changing month when click on days of other months (when hideExtraDays is false). Default = false
@@ -116,8 +123,7 @@ class Calendar extends Component {
     });
   }
 
-  pressDay(date) {
-    const day = parseDate(date);
+  pressDay(day) {
     const minDate = parseDate(this.props.minDate);
     const maxDate = parseDate(this.props.maxDate);
     if (!(minDate && !dateutils.isGTE(day, minDate)) && !(maxDate && !dateutils.isLTE(day, maxDate))) {
@@ -150,24 +156,22 @@ class Calendar extends Component {
     }
     let dayComp;
     if (!dateutils.sameMonth(day, this.state.currentMonth) && this.props.hideExtraDays) {
-      if (this.props.markingType === 'period') {
+      if (this.props.markingType === 'interactive') {
         dayComp = (<View key={id} style={{flex: 1}}/>);
       } else {
         dayComp = (<View key={id} style={{width: 32}}/>);
       }
     } else {
       const DayComp = this.getDayComponent();
-      const date = day.getDate();
       dayComp = (
         <DayComp
           key={id}
           state={state}
           theme={this.props.theme}
           onPress={this.pressDay}
-          date={xdateToData(day)}
-          marking={this.getDateMarking(day)}
-        >
-          {date}
+          day={day}
+          marked={this.getDateMarking(day)}>
+          {numberWithZero(day.getDate())}
         </DayComp>
       );
     }
@@ -175,12 +179,8 @@ class Calendar extends Component {
   }
 
   getDayComponent() {
-    if (this.props.dayComponent) {
-      return this.props.dayComponent;
-    }
-
     switch (this.props.markingType) {
-    case 'period':
+    case 'interactive':
       return UnitDay;
     case 'multi-dot':
       return MultiDotDay;
@@ -201,33 +201,16 @@ class Calendar extends Component {
     }
   }
 
-  renderWeekNumber (weekNumber) {
-    return (
-      <View key={`week-${weekNumber}`} style={{
-        width: 32,
-        height: 32,
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <Text>{weekNumber}</Text>
-      </View>
-    );
-  }
-
   renderWeek(days, id) {
     const week = [];
     days.forEach((day, id2) => {
       week.push(this.renderDay(day, id2));
     }, this);
-
-    if (this.props.showWeekNumbers) {
-      week.unshift(this.renderWeekNumber(days[0].getWeek()));
-    }
-
     return (<View style={this.style.week} key={id}>{week}</View>);
   }
 
   render() {
+    //console.log('render calendar ');
     const days = dateutils.page(this.state.currentMonth, this.props.firstDay);
     const weeks = [];
     while (days.length) {
@@ -254,7 +237,6 @@ class Calendar extends Component {
           renderArrow={this.props.renderArrow}
           monthFormat={this.props.monthFormat}
           hideDayNames={this.props.hideDayNames}
-          weekNumbers={this.props.showWeekNumbers}
         />
         {weeks}
       </View>);
@@ -262,3 +244,46 @@ class Calendar extends Component {
 }
 
 export default Calendar;
+
+
+// import React, { Component } from 'react';
+// import {
+//   Platform,
+//   StyleSheet,
+//   Text,
+//   View
+// } from 'react-native';
+// import LocaleConfig from 'xdate';
+// import Calendar from './calendar';
+
+// LocaleConfig.locales['id'] = {
+//   monthNames: ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],
+//   monthNamesShort: ['Janv.','Févr.','Mars','Avril','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'],
+//   dayNames: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+//   dayNamesShort: ['MIN','SEN','SEL','RAB','KAM','JUM','SAB']
+// };
+
+// LocaleConfig.defaultLocale = 'id';
+
+// export default class App extends Component {
+//   render() {
+//     return (
+//       <Calendar
+//         // Handler which gets executed on day press. Default = undefined
+//         onDayPress={(day) => {console.log('selected day', day)}}
+//         // Month format in calendar title. Formatting values: http://arshaw.com/xdate/#Formatting
+//         monthFormat={'MMMM yyyy'}
+//         // Handler which gets executed when visible month changes in calendar. Default = undefined
+//         onMonthChange={(month) => {console.log('month changed', month)}}
+//         // If firstDay=1 week starts from Monday. Note that dayNames and dayNamesShort should still start from Sunday.
+//         firstDay={1}
+//         theme={{arrowColor: 'black', todayTextColor: 'black'}}
+//         markedDates={{
+//           '2017-11-16': {marked: true},
+//           '2017-11-17': {marked: true},
+//           '2017-11-18': {disabled: true}
+//         }}
+//       />
+//     );
+//   }
+// }
