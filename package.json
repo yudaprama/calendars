@@ -1,0 +1,10 @@
+{
+  "name": "calendars",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/yudaprama/calendars.git",
+  "dependencies": {
+    "prop-types": "^15.5.10",
+    "xdate": "^0.8.0"
+  },
+}
